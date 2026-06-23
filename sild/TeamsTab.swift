@@ -84,7 +84,7 @@ struct TeamsTab: View {
                                 .foregroundStyle(.tertiary)
                         } else {
                             ForEach(members) { record in
-                                RecordRow(record: record)
+                                RecordRow(record: record, showsTent: true)
                             }
                         }
                     }

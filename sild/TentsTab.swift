@@ -97,7 +97,7 @@ private struct TentDetailView: View {
                 )
             } else {
                 List(records) { record in
-                    RecordRow(record: record)
+                    RecordRow(record: record, showsTeam: true)
                 }
             }
         }

@@ -37,7 +37,7 @@ struct RecordRow: View {
     private var subtitle: String {
         var parts: [String] = ["\(record.ageAtCamp)a"]
         if showsTent, let tent = record.tentNr {
-            parts.append("Telk \(tent)")
+            parts.append("\(tent). telk")
         }
         if showsTeam, let team = record.teamName, !team.isEmpty {
             parts.append(team)

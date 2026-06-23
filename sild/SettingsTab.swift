@@ -12,12 +12,43 @@ struct SettingsTab: View {
         NavigationStack {
             List {
                 Section {
-                    Button(role: .destructive, action: auth.logout) {
-                        Label("Logi välja", systemImage: "rectangle.portrait.and.arrow.right")
+                    VStack(alignment: .leading) {
+                        Text(
+                            auth.currentUser?.name ?? "[nimi]"
+                        )
+                        Text(
+                            auth.currentUser?.email ?? "[meil]"
+                        )
+                        .font(
+                            .footnote
+                        ).foregroundColor(.secondary)
+                    }
+                }
+                
+                Section("Laager") {
+                    LabeledContent("Vahetus") {
+                        if let currentUser = auth.currentUser {
+                            Text("\(currentUser.currentShift! as Int)")
+                        } else {
+                            Text("[vahetus]")
+                        }
+                    }
+                }
+                
+                Section {
+                    Button("Logi välja", role: .destructive) {
+                        Task {
+                            auth.logout()
+                        }
                     }
                 }
             }
             .navigationTitle("Sätted")
         }
     }
+}
+
+#Preview {
+    let auth = AuthService()
+    return SettingsTab().environment(auth)
 }

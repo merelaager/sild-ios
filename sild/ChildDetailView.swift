@@ -18,47 +18,42 @@ struct ChildDetailView: View {
 
     var body: some View {
         Form {
-            Section("Kohalolek") {
-                Toggle("Kohal", isOn: presenceBinding)
-                    .tint(.accentColor)
-            }
-
-            Section("Telk") {
+            Section("Laager") {
                 Picker("Telk", selection: tentBinding) {
-                    Text("Puudub").tag(Int?.none)
+                    Text("Määramata").tag(Int?.none)
                     ForEach(1...10, id: \.self) { number in
-                        Text("Telk \(number)").tag(Int?.some(number))
+                        Text("\(number). telk").tag(Int?.some(number))
                     }
                 }
-            }
-
-            Section("Meeskond") {
+                
                 Picker("Meeskond", selection: teamBinding) {
-                    Text("Puudub").tag(Int?.none)
+                    Text("Määramata").tag(Int?.none)
                     ForEach(teams) { team in
                         Text(team.name).tag(Int?.some(team.id))
                     }
                 }
                 .disabled(teams.isEmpty)
-
-                if let teamsLoadError {
-                    Text(teamsLoadError)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
+                
+                Toggle("Kohal", isOn: presenceBinding)
+                    .tint(.accentColor)
             }
 
-            Section("Andmed") {
-                LabeledContent("Vanus", value: "\(record.ageAtCamp)")
+            Section("Üldandmed") {
+                LabeledContent("Vanus", value: "\(record.ageAtCamp)a")
 
                 if let sex = sexLabel {
                     LabeledContent("Sugu", value: sex)
                 }
-
+                
                 if let registration {
                     LabeledContent("Uus", value: registration.isOld ? "Ei" : "Jah")
+                }
+            }
+            
+            if let registration {
+                Section("Kontaktandmed") {
                     if let name = registration.contactName, !name.isEmpty {
-                        LabeledContent("Lapsevanem", value: name)
+                        LabeledContent("Nimi", value: name)
                     }
                     if let phone = registration.contactNumber, !phone.isEmpty {
                         LabeledContent("Telefon") {
@@ -79,12 +74,12 @@ struct ChildDetailView: View {
                         }
                     }
                 }
+            }
 
-                if let registrationLoadError {
-                    Text(registrationLoadError)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
+            if let registrationLoadError {
+                Text(registrationLoadError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
         .navigationTitle(record.childName)
