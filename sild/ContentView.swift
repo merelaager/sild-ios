@@ -29,5 +29,8 @@ struct ContentView: View {
 
 #Preview {
     let auth = AuthService()
-    return ContentView().environment(auth)
+    let router = AppRouter()
+    return ContentView()
+        .environment(auth)
+        .environment(router)
 }

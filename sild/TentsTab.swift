@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct TentsTab: View {
+    @Binding var path: NavigationPath
     let records: [ShiftRecord]
     let isLoading: Bool
     let errorMessage: String?
@@ -15,7 +16,7 @@ struct TentsTab: View {
     private let columns = [GridItem(.adaptive(minimum: 140), spacing: 12)]
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content
                 .navigationTitle("Telgid")
                 .navigationDestination(for: Int.self) { number in
@@ -104,3 +105,28 @@ private struct TentDetailView: View {
         .navigationTitle("Telk \(tentNumber)")
     }
 }
+#Preview("Telk 2") {
+    NavigationStack {
+        TentDetailView(
+            tentNumber: 2,
+            records: [
+                ShiftRecord(id: 1, childId: 101, childName: "Sammalhabe",
+                            teamId: 1, teamName: "Punased", tentNr: 2,
+                            isPresent: true, ageAtCamp: 14, year: 2026, shiftNr: 3),
+                ShiftRecord(id: 2, childId: 102, childName: "Muhv",
+                            teamId: 2, teamName: "Sinised", tentNr: 2,
+                            isPresent: false, ageAtCamp: 12, year: 2026, shiftNr: 3),
+                ShiftRecord(id: 3, childId: 103, childName: "Kingpool",
+                            teamId: nil, teamName: nil, tentNr: 2,
+                            isPresent: true, ageAtCamp: 13, year: 2026, shiftNr: 3),
+            ]
+        )
+    }
+}
+
+#Preview("Tühi telk") {
+    NavigationStack {
+        TentDetailView(tentNumber: 2, records: [])
+    }
+}
+

@@ -5,23 +5,32 @@
 
 import SwiftUI
 
+enum HomeTab: Hashable {
+    case telgid, meeskonnad, lapsed, sätted
+}
+
 struct HomeView: View {
+    @Environment(AppRouter.self) private var router
     let user: CurrentUser
 
     @State private var records: [ShiftRecord] = []
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
+    @State private var selectedTab: HomeTab = .telgid
+    @State private var tentsPath = NavigationPath()
 
     var body: some View {
         if let shiftNr = user.currentShift {
-            TabView {
+            TabView(selection: $selectedTab) {
                 TentsTab(
+                    path: $tentsPath,
                     records: records,
                     isLoading: isLoading,
                     errorMessage: errorMessage,
                     reload: { await load(shiftNr: shiftNr) }
                 )
                 .tabItem { Label("Telgid", systemImage: "tent.fill") }
+                .tag(HomeTab.telgid)
 
                 TeamsTab(
                     records: records,
@@ -31,6 +40,7 @@ struct HomeView: View {
                     reload: { await load(shiftNr: shiftNr) }
                 )
                 .tabItem { Label("Meeskonnad", systemImage: "person.3.fill") }
+                .tag(HomeTab.meeskonnad)
 
                 ChildrenTab(
                     records: records,
@@ -42,11 +52,23 @@ struct HomeView: View {
                     setTeam: { id, teamId, teamName in await setTeam(recordId: id, teamId: teamId, teamName: teamName) }
                 )
                 .tabItem { Label("Lapsed", systemImage: "person.2.fill") }
+                .tag(HomeTab.lapsed)
 
                 SettingsTab()
                     .tabItem { Label("Sätted", systemImage: "gearshape.fill") }
+                    .tag(HomeTab.sätted)
             }
             .task(id: shiftNr) { await load(shiftNr: shiftNr) }
+            .onChange(of: router.pendingTentNumber, initial: true) { _, new in
+                print("[HomeView] onChange pendingTentNumber=\(String(describing: new)), selectedTab=\(selectedTab)")
+                guard let tent = new else { return }
+                Task { @MainActor in
+                    print("[HomeView] navigating to tent \(tent)")
+                    selectedTab = .telgid
+                    tentsPath = NavigationPath([tent])
+                    router.pendingTentNumber = nil
+                }
+            }
         } else {
             ContentUnavailableView(
                 "No current shift",
