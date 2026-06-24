@@ -20,7 +20,7 @@ struct TentsTab: View {
             content
                 .navigationTitle("Telgid")
                 .navigationDestination(for: Int.self) { number in
-                    TentDetailView(tentNumber: number, records: kids(forTent: number))
+                    TentDetailView(tentNumber: number, records: kids(forTent: number), path: $path)
                 }
         }
     }
@@ -87,46 +87,110 @@ private struct TentCard: View {
 private struct TentDetailView: View {
     let tentNumber: Int
     let records: [ShiftRecord]
+    @Binding var path: NavigationPath
+
+    private var hasPrevious: Bool { tentNumber > 1 }
+    private var hasNext: Bool { tentNumber < 10 }
+
+    private func navigate(to tent: Int) {
+        path = NavigationPath([tent])
+    }
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
             if records.isEmpty {
                 ContentUnavailableView(
                     "Telk on tühi",
                     systemImage: "tent",
                     description: Text("Selles telgis pole ühtegi last.")
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(records) { record in
                     RecordRow(record: record, showsTeam: true)
                 }
             }
+
+            navigationButtons
         }
         .navigationTitle("Telk \(tentNumber)")
     }
+
+    private var navigationButtons: some View {
+        HStack {
+            if hasPrevious {
+                Button {
+                    navigate(to: tentNumber - 1)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Telk \(tentNumber - 1)")
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Spacer()
+
+            if hasNext {
+                Button {
+                    navigate(to: tentNumber + 1)
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Telk \(tentNumber + 1)")
+                        Image(systemName: "chevron.right")
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
 }
-#Preview("Telk 2") {
-    NavigationStack {
-        TentDetailView(
-            tentNumber: 2,
-            records: [
-                ShiftRecord(id: 1, childId: 101, childName: "Sammalhabe",
-                            teamId: 1, teamName: "Punased", tentNr: 2,
-                            isPresent: true, ageAtCamp: 14, year: 2026, shiftNr: 3),
-                ShiftRecord(id: 2, childId: 102, childName: "Muhv",
-                            teamId: 2, teamName: "Sinised", tentNr: 2,
-                            isPresent: false, ageAtCamp: 12, year: 2026, shiftNr: 3),
-                ShiftRecord(id: 3, childId: 103, childName: "Kingpool",
-                            teamId: nil, teamName: nil, tentNr: 2,
-                            isPresent: true, ageAtCamp: 13, year: 2026, shiftNr: 3),
-            ]
-        )
+private let previewTentRecords: [ShiftRecord] = [
+    ShiftRecord(id: 1, childId: 101, childName: "Sammalhabe",
+                teamId: 1, teamName: "Punased", tentNr: 2,
+                isPresent: true, ageAtCamp: 14, year: 2026, shiftNr: 3),
+    ShiftRecord(id: 2, childId: 102, childName: "Muhv",
+                teamId: 2, teamName: "Sinised", tentNr: 2,
+                isPresent: false, ageAtCamp: 12, year: 2026, shiftNr: 3),
+    ShiftRecord(id: 3, childId: 103, childName: "Kingpool",
+                teamId: nil, teamName: nil, tentNr: 2,
+                isPresent: true, ageAtCamp: 13, year: 2026, shiftNr: 3),
+]
+
+private struct TentDetailPreviewHost: View {
+    let initialTent: Int
+    let records: [ShiftRecord]
+    @State private var path: NavigationPath
+
+    init(tent: Int, records: [ShiftRecord]) {
+        initialTent = tent
+        self.records = records
+        _path = State(initialValue: NavigationPath([tent]))
+    }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            Text("Telgid")
+                .navigationTitle("Telgid")
+                .navigationDestination(for: Int.self) { n in
+                    TentDetailView(
+                        tentNumber: n,
+                        records: n == initialTent ? records : [],
+                        path: $path
+                    )
+                }
+        }
     }
 }
 
+#Preview("Telk 2") {
+    TentDetailPreviewHost(tent: 2, records: previewTentRecords)
+}
+
 #Preview("Tühi telk") {
-    NavigationStack {
-        TentDetailView(tentNumber: 2, records: [])
-    }
+    TentDetailPreviewHost(tent: 2, records: [])
 }
 
