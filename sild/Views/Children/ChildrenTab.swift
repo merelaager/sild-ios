@@ -6,13 +6,15 @@
 import SwiftUI
 
 struct ChildrenTab: View {
-    let store: ShiftRecordsStore
+    let records: ShiftRecordsStore
+    let teams: TeamsStore
+    let registrations: RegistrationsStore
     @Binding var path: NavigationPath
 
     @State private var searchText: String = ""
 
     private var filteredRecords: [ShiftRecord] {
-        let sorted = store.records.sortedByName()
+        let sorted = records.records.sortedByName()
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return sorted }
         return sorted.filter {
@@ -23,15 +25,15 @@ struct ChildrenTab: View {
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if store.isLoading && store.records.isEmpty {
+                if records.isLoading && records.records.isEmpty {
                     ProgressView()
-                } else if let error = store.errorMessage, store.records.isEmpty {
+                } else if let error = records.errorMessage, records.records.isEmpty {
                     ContentUnavailableView(
                         "Couldn't load records",
                         systemImage: "exclamationmark.triangle",
                         description: Text(error)
                     )
-                } else if store.records.isEmpty {
+                } else if records.records.isEmpty {
                     ContentUnavailableView(
                         "No records",
                         systemImage: "tray",
@@ -50,8 +52,13 @@ struct ChildrenTab: View {
             .navigationTitle("Lapsed")
             .searchable(text: $searchText, prompt: "Otsi last")
             .navigationDestination(for: Int.self) { recordId in
-                if let record = store.records.first(where: { $0.id == recordId }) {
-                    ChildDetailView(record: record, store: store)
+                if let record = records.records.first(where: { $0.id == recordId }) {
+                    ChildDetailView(
+                        record: record,
+                        records: records,
+                        teams: teams,
+                        registrations: registrations
+                    )
                 }
             }
         }

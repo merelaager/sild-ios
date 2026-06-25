@@ -7,11 +7,13 @@ import SwiftUI
 
 struct ChildDetailView: View {
     let record: ShiftRecord
-    let store: ShiftRecordsStore
+    let records: ShiftRecordsStore
+    let teams: TeamsStore
+    let registrations: RegistrationsStore
 
-    @State private var teams: [Team] = []
-    @State private var registration: Registration?
-    @State private var loadError: String?
+    private var registration: Registration? {
+        registrations.registration(for: record.childId)
+    }
 
     var body: some View {
         Form {
@@ -25,11 +27,11 @@ struct ChildDetailView: View {
 
                 Picker("Meeskond", selection: teamBinding) {
                     Text("Määramata").tag(Int?.none)
-                    ForEach(teams) { team in
+                    ForEach(teams.teams) { team in
                         Text(team.name).tag(Int?.some(team.id))
                     }
                 }
-                .disabled(teams.isEmpty)
+                .disabled(teams.teams.isEmpty)
 
                 Toggle("Kohal", isOn: presenceBinding)
                     .tint(.accentColor)
@@ -70,16 +72,9 @@ struct ChildDetailView: View {
                     }
                 }
             }
-
-            if let loadError {
-                Text(loadError)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
         }
         .navigationTitle(record.childName)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await load() }
     }
 
     private var sexLabel: String? {
@@ -87,18 +82,6 @@ struct ChildDetailView: View {
         case "M": return "Poiss"
         case "F": return "Tüdruk"
         default: return nil
-        }
-    }
-
-    private func load() async {
-        loadError = nil
-        do {
-            async let teamsResult = TeamsAPI.fetch(shiftNr: record.shiftNr)
-            async let registrationsResult = RegistrationsAPI.fetch(shiftNr: record.shiftNr)
-            teams = try await teamsResult
-            registration = try await registrationsResult.first { $0.childId == record.childId }
-        } catch {
-            loadError = error.localizedDescription
         }
     }
 
@@ -119,14 +102,14 @@ struct ChildDetailView: View {
     private var presenceBinding: Binding<Bool> {
         Binding(
             get: { record.isPresent },
-            set: { newValue in Task { await store.setPresence(recordId: record.id, isPresent: newValue) } }
+            set: { newValue in Task { await records.setPresence(recordId: record.id, isPresent: newValue) } }
         )
     }
 
     private var tentBinding: Binding<Int?> {
         Binding(
             get: { record.tentNr },
-            set: { newValue in Task { await store.setTent(recordId: record.id, tentNr: newValue) } }
+            set: { newValue in Task { await records.setTent(recordId: record.id, tentNr: newValue) } }
         )
     }
 
@@ -134,8 +117,8 @@ struct ChildDetailView: View {
         Binding(
             get: { record.teamId },
             set: { newValue in
-                let name = newValue.flatMap { id in teams.first(where: { $0.id == id })?.name }
-                Task { await store.setTeam(recordId: record.id, teamId: newValue, teamName: name) }
+                let name = newValue.flatMap { id in teams.teams.first(where: { $0.id == id })?.name }
+                Task { await records.setTeam(recordId: record.id, teamId: newValue, teamName: name) }
             }
         )
     }

@@ -6,20 +6,18 @@
 import SwiftUI
 
 struct TeamsTab: View {
-    let store: ShiftRecordsStore
+    let records: ShiftRecordsStore
+    let teams: TeamsStore
     let shiftNr: Int
 
-    @State private var teams: [Team]?
-    @State private var teamsError: String?
-
-    private var records: [ShiftRecord] { store.records }
+    private var allRecords: [ShiftRecord] { records.records }
 
     private var ghostRecords: [ShiftRecord] {
-        records.filter { $0.teamId == nil }.sortedByName()
+        allRecords.filter { $0.teamId == nil }.sortedByName()
     }
 
     private func members(of teamId: Int) -> [ShiftRecord] {
-        records.filter { $0.teamId == teamId }.sortedByName()
+        allRecords.filter { $0.teamId == teamId }.sortedByName()
     }
 
     var body: some View {
@@ -27,28 +25,27 @@ struct TeamsTab: View {
             content
                 .navigationTitle("Meeskonnad")
         }
-        .task(id: shiftNr) { await loadTeams() }
     }
 
     @ViewBuilder
     private var content: some View {
-        if store.isLoading && records.isEmpty {
+        if records.isLoading && allRecords.isEmpty {
             ProgressView()
-        } else if let error = store.errorMessage, records.isEmpty {
+        } else if let error = records.errorMessage, allRecords.isEmpty {
             ContentUnavailableView(
                 "Couldn't load records",
                 systemImage: "exclamationmark.triangle",
                 description: Text(error)
             )
-        } else if records.isEmpty {
+        } else if allRecords.isEmpty {
             ContentUnavailableView(
                 "No records",
                 systemImage: "tray",
                 description: Text("There are no records for this shift.")
             )
-        } else if let teams {
-            teamsList(teams: teams)
-        } else if let teamsError {
+        } else if !teams.teams.isEmpty {
+            teamsList(teams: teams.teams)
+        } else if let teamsError = teams.errorMessage {
             ContentUnavailableView(
                 "Couldn't load teams",
                 systemImage: "exclamationmark.triangle",
@@ -117,21 +114,9 @@ struct TeamsTab: View {
     }
 
     private func reloadAll() async {
-        async let records: Void = store.load(shiftNr: shiftNr)
-        async let teamsResult: Void = loadTeams()
-        _ = await records
-        _ = await teamsResult
-    }
-
-    private func loadTeams() async {
-        teamsError = nil
-        do {
-            let fetched = try await TeamsAPI.fetch(shiftNr: shiftNr)
-            teams = fetched.sorted {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
-        } catch {
-            teamsError = error.localizedDescription
-        }
+        async let r: Void = records.load(shiftNr: shiftNr)
+        async let t: Void = teams.load(shiftNr: shiftNr)
+        _ = await r
+        _ = await t
     }
 }

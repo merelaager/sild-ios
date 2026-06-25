@@ -8,7 +8,9 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AuthService.self) private var auth
 
-    @State private var store = ShiftRecordsStore()
+    @State private var records = ShiftRecordsStore()
+    @State private var teams = TeamsStore()
+    @State private var registrations = RegistrationsStore()
     @State private var didBootstrap = false
 
     var body: some View {
@@ -22,7 +24,12 @@ struct ContentView: View {
                 case .unauthenticated:
                     LoginView()
                 case .authenticated(let user):
-                    HomeView(user: user, store: store)
+                    HomeView(
+                        user: user,
+                        records: records,
+                        teams: teams,
+                        registrations: registrations
+                    )
                 }
             }
         }
@@ -35,7 +42,18 @@ struct ContentView: View {
             }
             if case .authenticated(let user) = auth.state,
                let shiftNr = user.currentShift {
-                await store.load(shiftNr: shiftNr)
+                let recordsCached = records.hydrate(shiftNr: shiftNr)
+                teams.hydrate(shiftNr: shiftNr)
+                registrations.hydrate(shiftNr: shiftNr)
+
+                Task { await teams.load(shiftNr: shiftNr) }
+                Task { await registrations.load(shiftNr: shiftNr) }
+
+                if recordsCached {
+                    Task { await records.load(shiftNr: shiftNr) }
+                } else {
+                    await records.load(shiftNr: shiftNr)
+                }
             }
             didBootstrap = true
         }

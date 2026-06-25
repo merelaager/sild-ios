@@ -12,7 +12,9 @@ enum HomeTab: Hashable {
 struct HomeView: View {
     @Environment(AppRouter.self) private var router
     let user: CurrentUser
-    let store: ShiftRecordsStore
+    let records: ShiftRecordsStore
+    let teams: TeamsStore
+    let registrations: RegistrationsStore
 
     @State private var scoring = TentScoringCoordinator()
     @State private var selectedTab: HomeTab = .telgid
@@ -23,11 +25,11 @@ struct HomeView: View {
         if let shiftNr = user.currentShift {
             TabView(selection: $selectedTab) {
                 Tab("Telgid", systemImage: "tent", value: HomeTab.telgid) {
-                    TentsTab(store: store, scoring: scoring, shiftNr: shiftNr, path: $tentsPath)
+                    TentsTab(store: records, scoring: scoring, shiftNr: shiftNr, path: $tentsPath)
                 }
 
                 Tab("Meeskonnad", systemImage: "figure.sailing", value: HomeTab.meeskonnad) {
-                    TeamsTab(store: store, shiftNr: shiftNr)
+                    TeamsTab(records: records, teams: teams, shiftNr: shiftNr)
                 }
 
                 Tab("Sätted", systemImage: "gear", value: HomeTab.sätted) {
@@ -35,7 +37,12 @@ struct HomeView: View {
                 }
 
                 Tab("Otsi", systemImage: "magnifyingglass", value: HomeTab.search, role: .search) {
-                    ChildrenTab(store: store, path: $childrenPath)
+                    ChildrenTab(
+                        records: records,
+                        teams: teams,
+                        registrations: registrations,
+                        path: $childrenPath
+                    )
                 }
             }
             .tabBarMinimizeOnScrollDownIfAvailable()
@@ -43,8 +50,14 @@ struct HomeView: View {
                 TentAccessoryControls(scoring: scoring)
             }
             .task(id: shiftNr) {
-                if store.loadedShiftNr != shiftNr {
-                    await store.load(shiftNr: shiftNr)
+                if records.loadedShiftNr != shiftNr {
+                    await records.load(shiftNr: shiftNr)
+                }
+                if teams.loadedShiftNr != shiftNr {
+                    Task { await teams.load(shiftNr: shiftNr) }
+                }
+                if registrations.loadedShiftNr != shiftNr {
+                    Task { await registrations.load(shiftNr: shiftNr) }
                 }
             }
             .onChange(of: router.pendingTentNumber, initial: true) { _, new in

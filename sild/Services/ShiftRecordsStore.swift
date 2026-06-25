@@ -13,13 +13,27 @@ final class ShiftRecordsStore {
     private(set) var errorMessage: String?
     private(set) var loadedShiftNr: Int?
 
+    /// Synchronously populate from disk cache. Returns true on hit.
+    @discardableResult
+    func hydrate(shiftNr: Int) -> Bool {
+        guard loadedShiftNr != shiftNr else { return false }
+        guard let cached: [ShiftRecord] = DiskCache.read(key: cacheKey(shiftNr: shiftNr)) else {
+            return false
+        }
+        records = cached
+        loadedShiftNr = shiftNr
+        return true
+    }
+
     func load(shiftNr: Int) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            records = try await ShiftRecordsAPI.fetch(shiftNr: shiftNr)
+            let fetched = try await ShiftRecordsAPI.fetch(shiftNr: shiftNr)
+            records = fetched
             loadedShiftNr = shiftNr
+            DiskCache.write(fetched, key: cacheKey(shiftNr: shiftNr))
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -46,6 +60,7 @@ final class ShiftRecordsStore {
         records[index].teamName = teamName
         do {
             try await ShiftRecordsAPI.setTeam(recordId: recordId, teamId: teamId)
+            persist()
         } catch {
             if let revertIndex = records.firstIndex(where: { $0.id == recordId }) {
                 records[revertIndex].teamId = originalId
@@ -66,10 +81,20 @@ final class ShiftRecordsStore {
         guard records[index][keyPath: keyPath] != original else { return }
         do {
             try await request()
+            persist()
         } catch {
             if let revertIndex = records.firstIndex(where: { $0.id == recordId }) {
                 records[revertIndex][keyPath: keyPath] = original
             }
         }
+    }
+
+    private func cacheKey(shiftNr: Int) -> String {
+        "records-\(shiftNr)"
+    }
+
+    private func persist() {
+        guard let shiftNr = loadedShiftNr else { return }
+        DiskCache.write(records, key: cacheKey(shiftNr: shiftNr))
     }
 }
