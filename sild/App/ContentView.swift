@@ -30,6 +30,8 @@ struct ContentView: View {
             guard !didBootstrap else { return }
             if case .checking = auth.state {
                 await auth.refreshCurrentUser()
+            } else {
+                Task { await auth.refreshCurrentUser() }
             }
             if case .authenticated(let user) = auth.state,
                let shiftNr = user.currentShift {

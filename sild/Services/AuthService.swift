@@ -14,7 +14,17 @@ enum AuthState: Equatable {
 @MainActor
 @Observable
 final class AuthService {
-    private(set) var state: AuthState = .checking
+    private static let userCacheKey = "current-user"
+
+    private(set) var state: AuthState
+
+    init() {
+        if let cached: CurrentUser = DiskCache.read(key: Self.userCacheKey) {
+            self.state = .authenticated(cached)
+        } else {
+            self.state = .checking
+        }
+    }
 
     var currentUser: CurrentUser? {
         if case .authenticated(let user) = state { return user }
@@ -27,12 +37,20 @@ final class AuthService {
     }
 
     /// Called on app launch to determine whether a session already exists.
+    /// On transport errors (no network) we keep any cached user so the app
+    /// can be used offline; on an explicit 401 we clear the cached user.
     func refreshCurrentUser() async {
         do {
             let user = try await fetchCurrentUser()
+            DiskCache.write(user, key: Self.userCacheKey)
             state = .authenticated(user)
-        } catch {
+        } catch APIError.unauthorized {
+            DiskCache.remove(key: Self.userCacheKey)
             state = .unauthenticated
+        } catch {
+            if case .checking = state {
+                state = .unauthenticated
+            }
         }
     }
 
@@ -43,10 +61,12 @@ final class AuthService {
             tag: "Auth"
         )
         let user = try await fetchCurrentUser()
+        DiskCache.write(user, key: Self.userCacheKey)
         state = .authenticated(user)
     }
 
     func logout() {
+        DiskCache.remove(key: Self.userCacheKey)
         state = .unauthenticated
     }
 
