@@ -6,27 +6,16 @@
 import SwiftUI
 
 struct ChildrenTab: View {
+    let store: ShiftRecordsStore
     @Binding var path: NavigationPath
-    let records: [ShiftRecord]
-    let isLoading: Bool
-    let errorMessage: String?
-    let reload: () async -> Void
-    let setPresence: (Int, Bool) async -> Void
-    let setTent: (Int, Int?) async -> Void
-    let setTeam: (Int, Int?, String?) async -> Void
 
     @State private var searchText: String = ""
 
-    private var sortedRecords: [ShiftRecord] {
-        records.sorted {
-            $0.childName.localizedCaseInsensitiveCompare($1.childName) == .orderedAscending
-        }
-    }
-
     private var filteredRecords: [ShiftRecord] {
+        let sorted = store.records.sortedByName()
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return sortedRecords }
-        return sortedRecords.filter {
+        guard !query.isEmpty else { return sorted }
+        return sorted.filter {
             $0.childName.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil
         }
     }
@@ -34,15 +23,15 @@ struct ChildrenTab: View {
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if isLoading && records.isEmpty {
+                if store.isLoading && store.records.isEmpty {
                     ProgressView()
-                } else if let errorMessage, records.isEmpty {
+                } else if let error = store.errorMessage, store.records.isEmpty {
                     ContentUnavailableView(
                         "Couldn't load records",
                         systemImage: "exclamationmark.triangle",
-                        description: Text(errorMessage)
+                        description: Text(error)
                     )
-                } else if records.isEmpty {
+                } else if store.records.isEmpty {
                     ContentUnavailableView(
                         "No records",
                         systemImage: "tray",
@@ -53,26 +42,16 @@ struct ChildrenTab: View {
                 } else {
                     List(filteredRecords) { record in
                         NavigationLink(value: record.id) {
-                            RecordRow(
-                                record: record,
-                                showsTent: true,
-                                showsTeam: true
-                            )
+                            RecordRow(record: record, showsTent: true, showsTeam: true)
                         }
                     }
-                    .refreshable { await reload() }
                 }
             }
             .navigationTitle("Lapsed")
             .searchable(text: $searchText, prompt: "Otsi last")
             .navigationDestination(for: Int.self) { recordId in
-                if let record = records.first(where: { $0.id == recordId }) {
-                    ChildDetailView(
-                        record: record,
-                        setPresence: { value in await setPresence(recordId, value) },
-                        setTent: { value in await setTent(recordId, value) },
-                        setTeam: { teamId, teamName in await setTeam(recordId, teamId, teamName) }
-                    )
+                if let record = store.records.first(where: { $0.id == recordId }) {
+                    ChildDetailView(record: record, store: store)
                 }
             }
         }

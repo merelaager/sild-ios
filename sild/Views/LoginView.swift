@@ -13,20 +13,16 @@ struct LoginView: View {
     @State private var isSubmitting: Bool = false
     @State private var errorMessage: String?
 
+    private let brand = Color(red: 35.0 / 255.0, green: 64.0 / 255.0, blue: 143.0 / 255.0)
+
     var body: some View {
         VStack(spacing: 20) {
             Image("ship_w")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 120)
-                .foregroundStyle(
-                    Color(
-                        red: 35.0 / 255.0,
-                        green: 64.0 / 255.0,
-                        blue: 143.0 / 255.0
-                    )
-                )
-            
+                .foregroundStyle(brand)
+
             Text("Merelaagri sild")
                 .font(.title2)
                 .fontWeight(.semibold)
@@ -58,11 +54,8 @@ struct LoginView: View {
 
             Button(action: submit) {
                 HStack {
-                    if isSubmitting {
-                        ProgressView()
-                    }
-                    Text("Logi sisse")
-                        .fontWeight(.medium)
+                    if isSubmitting { ProgressView() }
+                    Text("Logi sisse").fontWeight(.medium)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -70,11 +63,7 @@ struct LoginView: View {
             .buttonBorderShape(.capsule)
             .controlSize(.large)
             .disabled(!canSubmit)
-            .tint(Color(
-                red: 35.0 / 255.0,
-                green: 64.0 / 255.0,
-                blue: 143.0 / 255.0
-            ))
+            .tint(brand)
         }
         .padding(24)
         .frame(maxWidth: 360)
@@ -99,6 +88,5 @@ struct LoginView: View {
 }
 
 #Preview {
-    let auth = AuthService()
-    return LoginView().environment(auth)
+    LoginView().environment(AuthService())
 }

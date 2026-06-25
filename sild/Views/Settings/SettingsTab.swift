@@ -13,22 +13,17 @@ struct SettingsTab: View {
             List {
                 Section {
                     VStack(alignment: .leading) {
-                        Text(
-                            auth.currentUser?.name ?? "[nimi]"
-                        )
-                        Text(
-                            auth.currentUser?.email ?? "[meil]"
-                        )
-                        .font(
-                            .footnote
-                        ).foregroundColor(.secondary)
+                        Text(auth.currentUser?.name ?? "[nimi]")
+                        Text(auth.currentUser?.email ?? "[meil]")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
                 Section("Laager") {
                     LabeledContent("Vahetus") {
-                        if let currentUser = auth.currentUser {
-                            Text("\(currentUser.currentShift! as Int)")
+                        if let shift = auth.currentUser?.currentShift {
+                            Text("\(shift)")
                         } else {
                             Text("[vahetus]")
                         }
@@ -47,6 +42,5 @@ struct SettingsTab: View {
 }
 
 #Preview {
-    let auth = AuthService()
-    return SettingsTab().environment(auth)
+    SettingsTab().environment(AuthService())
 }

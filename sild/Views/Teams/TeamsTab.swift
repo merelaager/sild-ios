@@ -6,25 +6,20 @@
 import SwiftUI
 
 struct TeamsTab: View {
-    let records: [ShiftRecord]
+    let store: ShiftRecordsStore
     let shiftNr: Int
-    let isLoading: Bool
-    let errorMessage: String?
-    let reload: () async -> Void
 
     @State private var teams: [Team]?
     @State private var teamsError: String?
 
+    private var records: [ShiftRecord] { store.records }
+
     private var ghostRecords: [ShiftRecord] {
-        records
-            .filter { $0.teamId == nil }
-            .sorted { $0.childName.localizedCaseInsensitiveCompare($1.childName) == .orderedAscending }
+        records.filter { $0.teamId == nil }.sortedByName()
     }
 
-    private func kids(inTeam id: Int) -> [ShiftRecord] {
-        records
-            .filter { $0.teamId == id }
-            .sorted { $0.childName.localizedCaseInsensitiveCompare($1.childName) == .orderedAscending }
+    private func members(of teamId: Int) -> [ShiftRecord] {
+        records.filter { $0.teamId == teamId }.sortedByName()
     }
 
     var body: some View {
@@ -37,13 +32,13 @@ struct TeamsTab: View {
 
     @ViewBuilder
     private var content: some View {
-        if isLoading && records.isEmpty {
+        if store.isLoading && records.isEmpty {
             ProgressView()
-        } else if let errorMessage, records.isEmpty {
+        } else if let error = store.errorMessage, records.isEmpty {
             ContentUnavailableView(
                 "Couldn't load records",
                 systemImage: "exclamationmark.triangle",
-                description: Text(errorMessage)
+                description: Text(error)
             )
         } else if records.isEmpty {
             ContentUnavailableView(
@@ -78,12 +73,11 @@ struct TeamsTab: View {
 
                 ForEach(teams) { team in
                     Section(team.name) {
-                        let members = kids(inTeam: team.id)
-                        if members.isEmpty {
-                            Text("Liikmed puuduvad")
-                                .foregroundStyle(.tertiary)
+                        let teamMembers = members(of: team.id)
+                        if teamMembers.isEmpty {
+                            Text("Liikmed puuduvad").foregroundStyle(.tertiary)
                         } else {
-                            ForEach(members) { record in
+                            ForEach(teamMembers) { record in
                                 RecordRow(record: record, showsTent: true)
                             }
                         }
@@ -100,7 +94,7 @@ struct TeamsTab: View {
                     .id("team-none")
                 }
             }
-            .refreshable { await combinedReload() }
+            .refreshable { await reloadAll() }
         }
     }
 
@@ -111,8 +105,7 @@ struct TeamsTab: View {
             }
         } label: {
             HStack {
-                Text(title)
-                    .foregroundStyle(.primary)
+                Text(title).foregroundStyle(.primary)
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.caption)
@@ -123,11 +116,11 @@ struct TeamsTab: View {
         .buttonStyle(.plain)
     }
 
-    private func combinedReload() async {
-        async let recordsReload: Void = reload()
-        async let teamsReload: Void = loadTeams()
-        _ = await recordsReload
-        _ = await teamsReload
+    private func reloadAll() async {
+        async let records: Void = store.load(shiftNr: shiftNr)
+        async let teamsResult: Void = loadTeams()
+        _ = await records
+        _ = await teamsResult
     }
 
     private func loadTeams() async {

@@ -15,16 +15,10 @@ struct sildApp: App {
             ContentView()
                 .environment(auth)
                 .environment(router)
-                .onOpenURL { url in
-                    print("[App] onOpenURL: \(url.absoluteString)")
-                    router.handle(url: url)
-                }
+                .onOpenURL { router.handle(url: $0) }
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                     if let url = activity.webpageURL {
-                        print("[App] onContinueUserActivity browsing url: \(url.absoluteString)")
                         router.handle(url: url)
-                    } else {
-                        print("[App] onContinueUserActivity browsing without webpageURL")
                     }
                 }
         }
