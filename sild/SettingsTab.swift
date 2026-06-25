@@ -24,7 +24,7 @@ struct SettingsTab: View {
                         ).foregroundColor(.secondary)
                     }
                 }
-                
+
                 Section("Laager") {
                     LabeledContent("Vahetus") {
                         if let currentUser = auth.currentUser {
@@ -34,12 +34,10 @@ struct SettingsTab: View {
                         }
                     }
                 }
-                
+
                 Section {
                     Button("Logi välja", role: .destructive) {
-                        Task {
-                            auth.logout()
-                        }
+                        auth.logout()
                     }
                 }
             }
