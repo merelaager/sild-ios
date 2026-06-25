@@ -35,7 +35,7 @@ private struct JSendEnvelope<Payload: Decodable>: Decodable {
 }
 
 enum APIClient {
-    static let baseURL = URL(string: "http://localhost:4000")!
+    static let baseURL = URL(string: "https://api.merelaager.ee")!
 
     private static let decoder = JSONDecoder()
     private static let encoder = JSONEncoder()
@@ -114,10 +114,14 @@ enum APIClient {
     @discardableResult
     private static func execute(_ request: URLRequest, tag: String) async throws -> Data {
         print("[\(tag)] \(request.httpMethod ?? "GET") \(request.url?.absoluteString ?? "?")")
+        if let url = request.url {
+            let cookies = HTTPCookieStorage.shared.cookies(for: url) ?? []
+            print("[\(tag)] cookies sent (\(cookies.count)): \(cookies.map { "\($0.name)=\($0.value.prefix(8))… domain=\($0.domain) secure=\($0.isSecure)" }.joined(separator: " | "))")
+        }
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await URLSession.shared.data(for: request, delegate: redirectLogger)
         } catch {
             print("[\(tag)] transport error: \(error)")
             throw APIError.transport(error)
@@ -126,6 +130,15 @@ enum APIClient {
             throw APIError.invalidResponse
         }
         print("[\(tag)] status \(http.statusCode)")
+        let contentType = (http.value(forHTTPHeaderField: "Content-Type")) ?? "<none>"
+        print("[\(tag)] content-type: \(contentType)")
+        if let setCookie = http.value(forHTTPHeaderField: "Set-Cookie") {
+            print("[\(tag)] set-cookie: \(setCookie)")
+        }
+        if !contentType.contains("application/json") {
+            let preview = String(data: data.prefix(200), encoding: .utf8) ?? "<non-utf8 \(data.count) bytes>"
+            print("[\(tag)] body preview: \(preview)")
+        }
         switch http.statusCode {
         case 200..<300:
             return data
@@ -134,5 +147,20 @@ enum APIClient {
         default:
             throw APIError.server(status: http.statusCode)
         }
+    }
+
+    private static let redirectLogger = RedirectLogger()
+}
+
+private final class RedirectLogger: NSObject, URLSessionTaskDelegate, Sendable {
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        print("[APIClient] redirect \(response.statusCode) -> \(request.url?.absoluteString ?? "?")")
+        completionHandler(request)
     }
 }

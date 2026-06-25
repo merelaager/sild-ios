@@ -50,16 +50,25 @@ struct TentDetailView: View {
             }
         }
         .navigationTitle("\(tentNumber). telk")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { path = NavigationPath() } label: {
+                    Image(systemName: "chevron.backward")
+                        .fontWeight(.semibold)
+                }
+                .accessibilityLabel("Tagasi")
+            }
+        }
         .overlay(alignment: .bottomTrailing) {
             addGradeButton
-                .padding(.trailing, 20)
+                .padding(.trailing, 32)
                 .padding(.bottom, 20)
         }
         .task { await loadScores() }
         .simultaneousGesture(
             DragGesture(minimumDistance: 40).onEnded(handleSwipe)
         )
-        .defersSystemGestures(on: .horizontal)
         .sheet(isPresented: $isAddGradeSheetPresented) {
             AddScoreSheet(tentNumber: tentNumber) { score in
                 try await TentsAPI.setScore(shiftNr: shiftNr, tentNr: tentNumber, score: score)
@@ -67,10 +76,10 @@ struct TentDetailView: View {
             }
         }
         .accessibilityAction(named: Text("Eelmine telk")) {
-            if hasPrevious { navigate(to: tentNumber - 1) }
+            if hasPrevious { path.append(tentNumber - 1) }
         }
         .accessibilityAction(named: Text("Järgmine telk")) {
-            if hasNext { navigate(to: tentNumber + 1) }
+            if hasNext { path.append(tentNumber + 1) }
         }
     }
 
@@ -96,18 +105,23 @@ struct TentDetailView: View {
         }
     }
 
-    private func navigate(to tent: Int) {
-        path = NavigationPath([tent])
-    }
-
     private func handleSwipe(_ value: DragGesture.Value) {
         let dx = value.translation.width
         let dy = value.translation.height
         guard abs(dx) > abs(dy) * 1.5, abs(dx) > 80 else { return }
+        let target: Int?
         if dx > 0, hasPrevious {
-            navigate(to: tentNumber - 1)
+            target = tentNumber - 1
         } else if dx < 0, hasNext {
-            navigate(to: tentNumber + 1)
+            target = tentNumber + 1
+        } else {
+            target = nil
+        }
+        guard let target else { return }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            path.append(target)
         }
     }
 
