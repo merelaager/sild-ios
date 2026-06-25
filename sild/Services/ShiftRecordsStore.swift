@@ -11,6 +11,7 @@ final class ShiftRecordsStore {
     private(set) var records: [ShiftRecord] = []
     private(set) var isLoading: Bool = false
     private(set) var errorMessage: String?
+    private(set) var loadedShiftNr: Int?
 
     func load(shiftNr: Int) async {
         isLoading = true
@@ -18,6 +19,7 @@ final class ShiftRecordsStore {
         defer { isLoading = false }
         do {
             records = try await ShiftRecordsAPI.fetch(shiftNr: shiftNr)
+            loadedShiftNr = shiftNr
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -12,8 +12,8 @@ enum HomeTab: Hashable {
 struct HomeView: View {
     @Environment(AppRouter.self) private var router
     let user: CurrentUser
+    let store: ShiftRecordsStore
 
-    @State private var store = ShiftRecordsStore()
     @State private var scoring = TentScoringCoordinator()
     @State private var selectedTab: HomeTab = .telgid
     @State private var tentsPath = NavigationPath()
@@ -42,7 +42,11 @@ struct HomeView: View {
             .tabViewBottomAccessoryIfAvailable(isEnabled: scoring.activeTent != nil) {
                 TentAccessoryControls(scoring: scoring)
             }
-            .task(id: shiftNr) { await store.load(shiftNr: shiftNr) }
+            .task(id: shiftNr) {
+                if store.loadedShiftNr != shiftNr {
+                    await store.load(shiftNr: shiftNr)
+                }
+            }
             .onChange(of: router.pendingTentNumber, initial: true) { _, new in
                 guard let tent = new else { return }
                 Task { @MainActor in
