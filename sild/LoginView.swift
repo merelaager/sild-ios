@@ -15,21 +15,39 @@ struct LoginView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Sild")
-                .font(.largeTitle)
+            Image("ship_w")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 120)
+                .foregroundStyle(
+                    Color(
+                        red: 35.0 / 255.0,
+                        green: 64.0 / 255.0,
+                        blue: 143.0 / 255.0
+                    )
+                )
+            
+            Text("Merelaagri sild")
+                .font(.title2)
                 .fontWeight(.semibold)
+                .padding(.bottom)
 
             VStack(spacing: 12) {
                 TextField("Kasutajanimi", text: $username)
                     .textContentType(.username)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .textFieldStyle(.roundedBorder)
+
+                Divider()
 
                 SecureField("Parool", text: $password)
                     .textContentType(.password)
-                    .textFieldStyle(.roundedBorder)
             }
+            .background(
+                Color(.secondarySystemGroupedBackground),
+                in: .rect(cornerRadius: 22, style: .continuous)
+            )
+            .padding(.bottom)
 
             if let errorMessage {
                 Text(errorMessage)
@@ -49,7 +67,14 @@ struct LoginView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
             .disabled(!canSubmit)
+            .tint(Color(
+                red: 35.0 / 255.0,
+                green: 64.0 / 255.0,
+                blue: 143.0 / 255.0
+            ))
         }
         .padding(24)
         .frame(maxWidth: 360)

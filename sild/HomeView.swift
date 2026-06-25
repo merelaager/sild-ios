@@ -6,7 +6,7 @@
 import SwiftUI
 
 enum HomeTab: Hashable {
-    case telgid, meeskonnad, lapsed, sätted
+    case telgid, meeskonnad, sätted, search
 }
 
 struct HomeView: View {
@@ -18,46 +18,50 @@ struct HomeView: View {
     @State private var errorMessage: String?
     @State private var selectedTab: HomeTab = .telgid
     @State private var tentsPath = NavigationPath()
+    @State private var childrenPath = NavigationPath()
 
     var body: some View {
         if let shiftNr = user.currentShift {
             TabView(selection: $selectedTab) {
-                TentsTab(
-                    path: $tentsPath,
-                    records: records,
-                    isLoading: isLoading,
-                    errorMessage: errorMessage,
-                    reload: { await load(shiftNr: shiftNr) }
-                )
-                .tabItem { Label("Telgid", systemImage: "tent.fill") }
-                .tag(HomeTab.telgid)
+                Tab("Telgid", systemImage: "tent", value: HomeTab.telgid) {
+                    TentsTab(
+                        path: $tentsPath,
+                        records: records,
+                        shiftNr: shiftNr,
+                        isLoading: isLoading,
+                        errorMessage: errorMessage,
+                        reload: { await load(shiftNr: shiftNr) }
+                    )
+                }
 
-                TeamsTab(
-                    records: records,
-                    shiftNr: shiftNr,
-                    isLoading: isLoading,
-                    errorMessage: errorMessage,
-                    reload: { await load(shiftNr: shiftNr) }
-                )
-                .tabItem { Label("Meeskonnad", systemImage: "person.3.fill") }
-                .tag(HomeTab.meeskonnad)
+                Tab("Meeskonnad", systemImage: "figure.sailing", value: HomeTab.meeskonnad) {
+                    TeamsTab(
+                        records: records,
+                        shiftNr: shiftNr,
+                        isLoading: isLoading,
+                        errorMessage: errorMessage,
+                        reload: { await load(shiftNr: shiftNr) }
+                    )
+                }
 
-                ChildrenTab(
-                    records: records,
-                    isLoading: isLoading,
-                    errorMessage: errorMessage,
-                    reload: { await load(shiftNr: shiftNr) },
-                    setPresence: { id, value in await setPresence(recordId: id, isPresent: value) },
-                    setTent: { id, value in await setTent(recordId: id, tentNr: value) },
-                    setTeam: { id, teamId, teamName in await setTeam(recordId: id, teamId: teamId, teamName: teamName) }
-                )
-                .tabItem { Label("Lapsed", systemImage: "person.2.fill") }
-                .tag(HomeTab.lapsed)
+                Tab("Sätted", systemImage: "gear", value: HomeTab.sätted) {
+                    SettingsTab()
+                }
 
-                SettingsTab()
-                    .tabItem { Label("Sätted", systemImage: "gearshape.fill") }
-                    .tag(HomeTab.sätted)
+                Tab("Otsi", systemImage: "magnifyingglass", value: HomeTab.search, role: .search) {
+                    ChildrenTab(
+                        path: $childrenPath,
+                        records: records,
+                        isLoading: isLoading,
+                        errorMessage: errorMessage,
+                        reload: { await load(shiftNr: shiftNr) },
+                        setPresence: { id, value in await setPresence(recordId: id, isPresent: value) },
+                        setTent: { id, value in await setTent(recordId: id, tentNr: value) },
+                        setTeam: { id, teamId, teamName in await setTeam(recordId: id, teamId: teamId, teamName: teamName) }
+                    )
+                }
             }
+            .tabBarMinimizeOnScrollDownIfAvailable()
             .task(id: shiftNr) { await load(shiftNr: shiftNr) }
             .onChange(of: router.pendingTentNumber, initial: true) { _, new in
                 print("[HomeView] onChange pendingTentNumber=\(String(describing: new)), selectedTab=\(selectedTab)")
@@ -131,6 +135,17 @@ struct HomeView: View {
                 records[revertIndex].teamId = originalId
                 records[revertIndex].teamName = originalName
             }
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func tabBarMinimizeOnScrollDownIfAvailable() -> some View {
+        if #available(iOS 26.0, *) {
+            self.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
         }
     }
 }

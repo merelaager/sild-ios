@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct ChildrenTab: View {
+    @Binding var path: NavigationPath
     let records: [ShiftRecord]
     let isLoading: Bool
     let errorMessage: String?
@@ -31,7 +32,7 @@ struct ChildrenTab: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if isLoading && records.isEmpty {
                     ProgressView()
