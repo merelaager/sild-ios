@@ -9,6 +9,7 @@ struct TentDetailView: View {
     let tentNumber: Int
     let shiftNr: Int
     let records: [ShiftRecord]
+    let scoring: TentScoringCoordinator
     @Binding var path: NavigationPath
 
     @State private var scores: [TentScore] = []
@@ -60,12 +61,26 @@ struct TentDetailView: View {
                 .accessibilityLabel("Tagasi")
             }
         }
-        .overlay(alignment: .bottomTrailing) {
-            addGradeButton
-                .padding(.trailing, 32)
-                .padding(.bottom, 20)
+        .task {
+            scoring.setActive(tentNumber: tentNumber, shiftNr: shiftNr)
+            await loadScores()
         }
-        .task { await loadScores() }
+        .onDisappear { scoring.clearActive(forTent: tentNumber) }
+        .onChange(of: scoring.sheetRequestId) { _, _ in
+            if scoring.activeTent?.tentNumber == tentNumber {
+                isAddGradeSheetPresented = true
+            }
+        }
+        .onChange(of: scoring.previousRequestId) { _, _ in
+            if scoring.activeTent?.tentNumber == tentNumber, hasPrevious {
+                goToTent(tentNumber - 1)
+            }
+        }
+        .onChange(of: scoring.nextRequestId) { _, _ in
+            if scoring.activeTent?.tentNumber == tentNumber, hasNext {
+                goToTent(tentNumber + 1)
+            }
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 40).onEnded(handleSwipe)
         )
@@ -83,41 +98,18 @@ struct TentDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private var addGradeButton: some View {
-        let action = { isAddGradeSheetPresented = true }
-        if #available(iOS 26.0, *) {
-            Button(action: action) {
-                Image(systemName: "square.and.pencil")
-                    .font(.title2)
-                    .frame(width: 34, height: 34)
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
-            .accessibilityLabel("Lisa hinne")
-        } else {
-            Button(action: action) {
-                Image(systemName: "square.and.pencil").font(.title2)
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
-            .accessibilityLabel("Lisa hinne")
-        }
-    }
-
     private func handleSwipe(_ value: DragGesture.Value) {
         let dx = value.translation.width
         let dy = value.translation.height
         guard abs(dx) > abs(dy) * 1.5, abs(dx) > 80 else { return }
-        let target: Int?
         if dx > 0, hasPrevious {
-            target = tentNumber - 1
+            goToTent(tentNumber - 1)
         } else if dx < 0, hasNext {
-            target = tentNumber + 1
-        } else {
-            target = nil
+            goToTent(tentNumber + 1)
         }
-        guard let target else { return }
+    }
+
+    private func goToTent(_ target: Int) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {

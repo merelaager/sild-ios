@@ -7,6 +7,7 @@ import SwiftUI
 
 struct TentsTab: View {
     let store: ShiftRecordsStore
+    let scoring: TentScoringCoordinator
     let shiftNr: Int
     @Binding var path: NavigationPath
 
@@ -24,6 +25,7 @@ struct TentsTab: View {
                         tentNumber: number,
                         shiftNr: shiftNr,
                         records: kids(forTent: number),
+                        scoring: scoring,
                         path: $path
                     )
                 }
