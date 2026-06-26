@@ -14,7 +14,7 @@ enum AuthState: Equatable {
 @MainActor
 @Observable
 final class AuthService {
-    private static let userCacheKey = "current-user"
+    static let userCacheKey = "current-user"
 
     private(set) var state: AuthState
 

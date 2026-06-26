@@ -44,4 +44,13 @@ enum DiskCache {
         let url = directory.appendingPathComponent("\(key).json")
         try? FileManager.default.removeItem(at: url)
     }
+
+    static func clearAll(excluding keys: Set<String> = []) {
+        let excludedFilenames = Set(keys.map { "\($0).json" })
+        let fm = FileManager.default
+        guard let files = try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return }
+        for file in files where !excludedFilenames.contains(file.lastPathComponent) {
+            try? fm.removeItem(at: file)
+        }
+    }
 }

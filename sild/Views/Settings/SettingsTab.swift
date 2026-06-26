@@ -7,6 +7,7 @@ import SwiftUI
 
 struct SettingsTab: View {
     @Environment(AuthService.self) private var auth
+    @State private var didClearCache = false
 
     var body: some View {
         NavigationStack {
@@ -45,12 +46,25 @@ struct SettingsTab: View {
                 }
 
                 Section {
+                    Button(didClearCache ? "Vahemälu tühjendatud" : "Tühjenda vahemälu") {
+                        DiskCache.clearAll(excluding: [AuthService.userCacheKey])
+                        didClearCache = true
+                    }
+                    .disabled(didClearCache)
+                } header: {
+                    Text("Rakendus")
+                } footer: {
+                    Text("Eemalda seadmesse salvestatud andmed, näiteks laste ja meeskondade info. Aitab andmekonflikti või aegunud andmete korral.")
+                }
+
+                Section {
                     Button("Logi välja", role: .destructive) {
                         auth.logout()
                     }
                 }
             }
             .navigationTitle("Sätted")
+            .onAppear { didClearCache = false }
         }
     }
 }
