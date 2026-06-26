@@ -132,6 +132,7 @@ struct TeamsTab: View {
                         } else {
                             ForEach(teamMembers) { record in
                                 RecordRow(record: record, showsTent: true)
+                                    .selectionDisabled(!isEditing)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
                                             Task {
