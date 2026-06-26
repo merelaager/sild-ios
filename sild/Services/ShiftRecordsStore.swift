@@ -13,6 +13,13 @@ final class ShiftRecordsStore {
     private(set) var errorMessage: String?
     private(set) var loadedShiftNr: Int?
 
+    init() {}
+
+    init(previewRecords: [ShiftRecord], shiftNr: Int) {
+        self.records = previewRecords
+        self.loadedShiftNr = shiftNr
+    }
+
     /// Synchronously populate from disk cache. Returns true on hit.
     @discardableResult
     func hydrate(shiftNr: Int) -> Bool {

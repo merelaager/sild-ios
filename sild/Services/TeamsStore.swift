@@ -13,6 +13,13 @@ final class TeamsStore {
     private(set) var errorMessage: String?
     private(set) var loadedShiftNr: Int?
 
+    init() {}
+
+    init(previewTeams: [Team], shiftNr: Int) {
+        self.teams = sorted(previewTeams)
+        self.loadedShiftNr = shiftNr
+    }
+
     @discardableResult
     func hydrate(shiftNr: Int) -> Bool {
         guard loadedShiftNr != shiftNr else { return false }
