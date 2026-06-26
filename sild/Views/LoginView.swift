@@ -28,19 +28,23 @@ struct LoginView: View {
                 .fontWeight(.semibold)
                 .padding(.bottom)
 
-            VStack(spacing: 12) {
+            VStack(spacing: 0) {
                 TextField("Kasutajanimi", text: $username)
                     .textContentType(.username)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
 
                 Divider()
 
                 SecureField("Parool", text: $password)
                     .textContentType(.password)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
             }
             .background(
-                Color(.secondarySystemGroupedBackground),
+                Color(.secondarySystemFill),
                 in: .rect(cornerRadius: 22, style: .continuous)
             )
             .padding(.bottom)
@@ -67,6 +71,7 @@ struct LoginView: View {
         }
         .padding(24)
         .frame(maxWidth: 360)
+        .offset(y: -25)
     }
 
     private var canSubmit: Bool {
