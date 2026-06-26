@@ -40,7 +40,11 @@
             <point key="canvasLocation" x="52.238805970149251" y="374.14187643020591"/>
         </scene>
     </scenes>
+    <color key="tintColor" name="LaunchBackground"/>
     <resources>
         <image name="ship_launch" width="359" height="469"/>
+        <namedColor name="LaunchBackground">
+            <color red="0.13725490196078433" green="0.25098039215686274" blue="0.5607843137254902" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
     </resources>
 </document>
