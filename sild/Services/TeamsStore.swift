@@ -45,6 +45,16 @@ final class TeamsStore {
         }
     }
 
+    func create(shiftNr: Int, name: String) async {
+        errorMessage = nil
+        do {
+            try await TeamsAPI.create(shiftNr: shiftNr, name: name)
+            await load(shiftNr: shiftNr)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func sorted(_ items: [Team]) -> [Team] {
         items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }

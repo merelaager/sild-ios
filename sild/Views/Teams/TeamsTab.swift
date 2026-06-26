@@ -10,6 +10,7 @@ struct TeamsTab: View {
     let teams: TeamsStore
     let shiftNr: Int
 
+    @State private var showTeamCreationSheet = false
     @State private var addingTeam: Team?
     @State private var editMode: EditMode = .inactive
     @State private var selectedRecordIds: Set<Int> = []
@@ -113,6 +114,14 @@ struct TeamsTab: View {
                         indexRow(title: "Meeskonnata", targetId: "team-none", proxy: proxy)
                             .selectionDisabled()
                     }
+                    if isEditing {
+                        Button {
+                            showTeamCreationSheet = true
+                        } label: {
+                            Label("Loo meeskond", systemImage: "plus")
+                        }
+                        .selectionDisabled()
+                    }
                 }
 
                 ForEach(teams) { team in
@@ -160,6 +169,9 @@ struct TeamsTab: View {
                 }
             }
             .refreshable { await reloadAll() }
+            .sheet(isPresented: $showTeamCreationSheet) {
+                CreateTeamSheet(teams: self.teams, shiftNr: shiftNr)
+            }
             .sheet(item: $addingTeam) { team in
                 AddTeamMemberSheet(team: team, records: records)
             }
@@ -189,6 +201,65 @@ struct TeamsTab: View {
         async let t: Void = teams.load(shiftNr: shiftNr)
         _ = await r
         _ = await t
+    }
+}
+
+private struct CreateTeamSheet: View {
+    let teams: TeamsStore
+    let shiftNr: Int
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var teamName: String = ""
+
+    private var trimmedName: String {
+        teamName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Meeskonna nimi") {
+                    TextField("", text: $teamName)
+                }
+            }
+            .navigationTitle("Loo meeskond")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    if #available(iOS 26.0, *) {
+                        Button(role: .cancel) { dismiss() }
+                    } else {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xcross")
+                        }
+                        .accessibilityLabel("Tühista")
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if #available(iOS 26.0, *) {
+                        Button(role: .confirm) { submit() }
+                            .disabled(trimmedName.isEmpty)
+                    } else {
+                        Button { submit() } label: {
+                            Image(systemName: "checkmark")
+                        }
+                        .accessibilityLabel("Valmis")
+                        .disabled(trimmedName.isEmpty)
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(200)])
+    }
+
+    private func submit() {
+        let name = trimmedName
+        guard !name.isEmpty else { return }
+        Task {
+            await teams.create(shiftNr: shiftNr, name: name)
+        }
+        dismiss()
     }
 }
 

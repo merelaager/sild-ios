@@ -18,4 +18,17 @@ enum TeamsAPI {
         )
         return payload.teams
     }
+
+    private struct CreateBody: Encodable {
+        let shiftNr: Int
+        let name: String
+    }
+
+    static func create(shiftNr: Int, name: String) async throws {
+        try await APIClient.post(
+            "api/teams",
+            body: CreateBody(shiftNr: shiftNr, name: name),
+            tag: "Teams"
+        )
+    }
 }
