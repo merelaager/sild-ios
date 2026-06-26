@@ -15,7 +15,6 @@ final class TentScoringCoordinator {
 
     var activeTent: ActiveTent?
 
-    private(set) var sheetRequestId: Int = 0
     private(set) var previousRequestId: Int = 0
     private(set) var nextRequestId: Int = 0
 
@@ -27,10 +26,6 @@ final class TentScoringCoordinator {
         if activeTent?.tentNumber == tentNumber {
             activeTent = nil
         }
-    }
-
-    func requestSheet() {
-        sheetRequestId &+= 1
     }
 
     func requestPrevious() {
@@ -59,14 +54,6 @@ struct TentAccessoryControls: View {
             .buttonStyle(.plain)
             .disabled(!hasPrevious)
             .accessibilityLabel("Eelmine telk")
-
-            Spacer()
-
-            Button { scoring.requestSheet() } label: {
-                Image(systemName: "square.and.pencil")
-                    .font(.title3)
-            }
-            .accessibilityLabel("Lisa hinne")
 
             Spacer()
 

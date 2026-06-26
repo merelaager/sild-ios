@@ -37,6 +37,12 @@ struct TentDetailView: View {
             }
 
             Section("Hinded") {
+                Button {
+                    isAddGradeSheetPresented = true
+                } label: {
+                    Label("Lisa hinne", systemImage: "plus")
+                }
+
                 if isLoadingScores && scores.isEmpty {
                     HStack { Spacer(); ProgressView(); Spacer() }
                 } else if let scoresError, scores.isEmpty {
@@ -66,11 +72,6 @@ struct TentDetailView: View {
             await loadScores()
         }
         .onDisappear { scoring.clearActive(forTent: tentNumber) }
-        .onChange(of: scoring.sheetRequestId) { _, _ in
-            if scoring.activeTent?.tentNumber == tentNumber {
-                isAddGradeSheetPresented = true
-            }
-        }
         .onChange(of: scoring.previousRequestId) { _, _ in
             if scoring.activeTent?.tentNumber == tentNumber, hasPrevious {
                 goToTent(tentNumber - 1)
@@ -132,7 +133,11 @@ struct TentDetailView: View {
 private struct ScoreRow: View {
     let score: TentScore
 
-    private static let estonian = Locale(identifier: "et_EE")
+    private static let formatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "dd.MM 'kl' HH.mm"
+        return f
+    }()
 
     var body: some View {
         HStack {
@@ -148,7 +153,7 @@ private struct ScoreRow: View {
 
     private var timestamp: String {
         guard let date = score.createdAtDate else { return score.createdAt }
-        return date.formatted(.relative(presentation: .named).locale(Self.estonian))
+        return Self.formatter.string(from: date)
     }
 }
 
@@ -182,11 +187,26 @@ private struct AddScoreSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Tühista") { dismiss() }
+                    if #available(iOS 26.0, *) {
+                        Button(role: .cancel) { dismiss() }
+                    } else {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xcross")
+                        }
+                        .accessibilityLabel("Tühista")
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Salvesta") { save() }
+                    if #available(iOS 26.0, *) {
+                        Button(role: .confirm) { save() }
+                            .disabled(isSubmitting || Int(scoreText) == nil)
+                    } else {
+                        Button { save() } label: {
+                            Image(systemName: "checkmark")
+                        }
+                        .accessibilityLabel("Salvesta")
                         .disabled(isSubmitting || Int(scoreText) == nil)
+                    }
                 }
             }
         }
