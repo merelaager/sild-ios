@@ -12,6 +12,7 @@ struct TeamsTab: View {
 
     @State private var addingTeam: Team?
     @State private var isEditing: Bool = false
+    @State private var selectedRecordIds: Set<Int> = []
 
     private var allRecords: [ShiftRecord] { records.records }
 
@@ -28,15 +29,41 @@ struct TeamsTab: View {
             content
                 .navigationTitle("Meeskonnad")
                 .toolbar {
+                    if isEditing {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(role: .destructive) {
+                                batchRemoveSelection()
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .disabled(selectedRecordIds.isEmpty)
+                            .accessibilityLabel("Eemalda valitud")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            isEditing.toggle()
+                            withAnimation {
+                                isEditing.toggle()
+                                if !isEditing {
+                                    selectedRecordIds.removeAll()
+                                }
+                            }
                         } label: {
                             Image(systemName: isEditing ? "checkmark" : "pencil")
                         }
                         .accessibilityLabel(isEditing ? "Valmis" : "Muuda")
                     }
                 }
+        }
+    }
+
+    private func batchRemoveSelection() {
+        let ids = selectedRecordIds
+        selectedRecordIds.removeAll()
+        Task {
+            for id in ids {
+                await records.setTeam(recordId: id, teamId: nil, teamName: nil)
+            }
         }
     }
 
@@ -71,13 +98,15 @@ struct TeamsTab: View {
 
     private func teamsList(teams: [Team]) -> some View {
         ScrollViewReader { proxy in
-            List {
+            List(selection: $selectedRecordIds) {
                 Section("Meeskonnad") {
                     ForEach(teams) { team in
                         indexRow(title: team.name, targetId: "team-\(team.id)", proxy: proxy)
+                            .selectionDisabled()
                     }
                     if !ghostRecords.isEmpty {
                         indexRow(title: "Meeskonnata", targetId: "team-none", proxy: proxy)
+                            .selectionDisabled()
                     }
                 }
 
@@ -110,6 +139,7 @@ struct TeamsTab: View {
                             } label: {
                                 Label("Lisa laps", systemImage: "plus")
                             }
+                            .selectionDisabled()
                         }
                     }
                     .id("team-\(team.id)")
