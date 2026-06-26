@@ -11,8 +11,10 @@ struct TeamsTab: View {
     let shiftNr: Int
 
     @State private var addingTeam: Team?
-    @State private var isEditing: Bool = false
+    @State private var editMode: EditMode = .inactive
     @State private var selectedRecordIds: Set<Int> = []
+
+    private var isEditing: Bool { editMode.isEditing }
 
     private var allRecords: [ShiftRecord] { records.records }
 
@@ -43,9 +45,11 @@ struct TeamsTab: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             withAnimation {
-                                isEditing.toggle()
-                                if !isEditing {
+                                if isEditing {
+                                    editMode = .inactive
                                     selectedRecordIds.removeAll()
+                                } else {
+                                    editMode = .active
                                 }
                             }
                         } label: {
@@ -54,6 +58,7 @@ struct TeamsTab: View {
                         .accessibilityLabel(isEditing ? "Valmis" : "Muuda")
                     }
                 }
+                .environment(\.editMode, $editMode)
         }
     }
 
@@ -114,7 +119,7 @@ struct TeamsTab: View {
                     Section(team.name) {
                         let teamMembers = members(of: team.id)
                         if teamMembers.isEmpty {
-                            Text("Liikmed puuduvad").foregroundStyle(.tertiary)
+                            Text("Liikmed puuduvad").foregroundStyle(.tertiary).selectionDisabled()
                         } else {
                             ForEach(teamMembers) { record in
                                 RecordRow(record: record, showsTent: true)
