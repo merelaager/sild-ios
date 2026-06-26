@@ -10,6 +10,8 @@ struct TeamsTab: View {
     let teams: TeamsStore
     let shiftNr: Int
 
+    @State private var addingTeam: Team?
+
     private var allRecords: [ShiftRecord] { records.records }
 
     private var ghostRecords: [ShiftRecord] {
@@ -78,6 +80,11 @@ struct TeamsTab: View {
                                 RecordRow(record: record, showsTent: true)
                             }
                         }
+                        Button {
+                            addingTeam = team
+                        } label: {
+                            Label("Lisa laps", systemImage: "plus")
+                        }
                     }
                     .id("team-\(team.id)")
                 }
@@ -92,6 +99,9 @@ struct TeamsTab: View {
                 }
             }
             .refreshable { await reloadAll() }
+            .sheet(item: $addingTeam) { team in
+                AddTeamMemberSheet(team: team, records: records)
+            }
         }
     }
 
@@ -119,4 +129,99 @@ struct TeamsTab: View {
         _ = await r
         _ = await t
     }
+}
+
+private struct AddTeamMemberSheet: View {
+    let team: Team
+    let records: ShiftRecordsStore
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText: String = ""
+
+    private var candidates: [ShiftRecord] {
+        records.records.filter { $0.teamId == nil }.sortedByName()
+    }
+
+    private var filteredCandidates: [ShiftRecord] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return candidates }
+        return candidates.filter {
+            $0.childName.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if candidates.isEmpty {
+                    ContentUnavailableView(
+                        "Meeskonnata lapsi pole",
+                        systemImage: "person.slash"
+                    )
+                } else if filteredCandidates.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                } else {
+                    List(filteredCandidates) { record in
+                        Button {
+                            Task {
+                                await records.setTeam(
+                                    recordId: record.id,
+                                    teamId: team.id,
+                                    teamName: team.name
+                                )
+                            }
+                        } label: {
+                            RecordRow(record: record, showsTent: true)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .contentMargins(.top, 0, for: .scrollContent)
+                }
+            }
+            .navigationTitle(team.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Otsi last")
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    if #available(iOS 26.0, *) {
+                        Button(role: .confirm) { dismiss() }
+                    } else {
+                        Button { dismiss() } label: {
+                            Image(systemName: "checkmark")
+                        }
+                        .accessibilityLabel("Valmis")
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+#Preview {
+    let shiftNr = 1
+    let sampleRecords: [ShiftRecord] = [
+        ShiftRecord(id: 1, childId: 11, childName: "Toots",
+                    teamId: 100, teamName: "Ankur", tentNr: 3,
+                    isPresent: true, ageAtCamp: 10, year: 2026, shiftNr: shiftNr),
+        ShiftRecord(id: 2, childId: 12, childName: "Teele",
+                    teamId: 100, teamName: "Ankur", tentNr: 4,
+                    isPresent: true, ageAtCamp: 11, year: 2026, shiftNr: shiftNr),
+        ShiftRecord(id: 3, childId: 13, childName: "Tõnisson",
+                    teamId: 200, teamName: "Purjekas", tentNr: 5,
+                    isPresent: true, ageAtCamp: 9, year: 2026, shiftNr: shiftNr),
+        ShiftRecord(id: 4, childId: 14, childName: "Arno",
+                    teamId: nil, teamName: nil, tentNr: 1,
+                    isPresent: true, ageAtCamp: 12, year: 2026, shiftNr: shiftNr),
+    ]
+    let sampleTeams: [Team] = [
+        Team(id: 100, shiftNr: shiftNr, name: "Ankur", year: 2026, place: nil, captainId: nil),
+        Team(id: 200, shiftNr: shiftNr, name: "Purjekas", year: 2026, place: nil, captainId: nil),
+    ]
+    return TeamsTab(
+        records: ShiftRecordsStore(previewRecords: sampleRecords, shiftNr: shiftNr),
+        teams: TeamsStore(previewTeams: sampleTeams, shiftNr: shiftNr),
+        shiftNr: shiftNr
+    )
 }
