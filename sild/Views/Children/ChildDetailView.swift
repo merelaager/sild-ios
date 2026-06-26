@@ -49,32 +49,44 @@ struct ChildDetailView: View {
 
             if let registration {
                 Section("Kontaktandmed") {
-                    if let name = registration.contactName, !name.isEmpty {
-                        LabeledContent("Nimi", value: name)
-                    }
-                    if let phone = registration.contactNumber, !phone.isEmpty {
-                        LabeledContent("Telefon") {
-                            if let url = telURL(for: phone) {
-                                Link(phone, destination: url)
-                            } else {
-                                Text(phone).foregroundStyle(.secondary)
+                    if hasContactInfo(registration) {
+                        if let name = registration.contactName, !name.isEmpty {
+                            LabeledContent("Nimi", value: name)
+                        }
+                        if let phone = registration.contactNumber, !phone.isEmpty {
+                            LabeledContent("Telefon") {
+                                if let url = telURL(for: phone) {
+                                    Link(phone, destination: url)
+                                } else {
+                                    Text(phone).foregroundStyle(.secondary)
+                                }
                             }
                         }
-                    }
-                    if let email = registration.contactEmail, !email.isEmpty {
-                        LabeledContent("E-post") {
-                            if let url = mailtoURL(for: email) {
-                                Link(email, destination: url)
-                            } else {
-                                Text(email).foregroundStyle(.secondary)
+                        if let email = registration.contactEmail, !email.isEmpty {
+                            LabeledContent("E-post") {
+                                if let url = mailtoURL(for: email) {
+                                    Link(email, destination: url)
+                                } else {
+                                    Text(email).foregroundStyle(.secondary)
+                                }
                             }
                         }
+                    } else {
+                        Text("Õigused puuduvad")
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
         }
         .navigationTitle(record.childName)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func hasContactInfo(_ registration: Registration) -> Bool {
+        let name = registration.contactName?.isEmpty == false
+        let phone = registration.contactNumber?.isEmpty == false
+        let email = registration.contactEmail?.isEmpty == false
+        return name || phone || email
     }
 
     private var sexLabel: String? {
