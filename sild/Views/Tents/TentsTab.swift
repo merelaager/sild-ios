@@ -87,7 +87,9 @@ private struct TentCard: View {
     }
 
     private var firstRow: String {
-        names.isEmpty ? "Tühi" : names.prefix(2).joined(separator: ", ")
+        if names.isEmpty { return "Tühi" }
+        let head = names.prefix(2).joined(separator: ", ")
+        return names.count > 2 ? "\(head)," : head
     }
 
     private var secondRow: String {
