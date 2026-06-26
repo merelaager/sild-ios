@@ -18,6 +18,20 @@ struct SettingsTab: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
+                } footer: {
+                    Link(
+                        destination: URL(
+                            string:
+                                "https://sild.merelaager.ee/privaatsustingimused"
+                        )!
+                    ) {
+                        HStack(spacing: 4) {
+                            Text("Privaatsustingimused")
+                            Image(systemName: "arrow.up.right.square")
+                        }
+                        .font(.footnote)
+                        .foregroundColor(.blue)
+                    }
                 }
 
                 Section("Laager") {
