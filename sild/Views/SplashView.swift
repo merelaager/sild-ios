@@ -15,7 +15,7 @@ struct SplashView: View {
                 Image("ship_w")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 218, height: 178)
+                    .frame(width: 144)
                     .foregroundStyle(.white)
             }
     }
