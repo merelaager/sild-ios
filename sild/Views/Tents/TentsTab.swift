@@ -24,7 +24,7 @@ struct TentsTab: View {
                     TentDetailView(
                         tentNumber: number,
                         shiftNr: shiftNr,
-                        records: kids(forTent: number),
+                        store: store,
                         scoring: scoring,
                         path: $path
                     )
@@ -60,10 +60,6 @@ struct TentsTab: View {
 
     private func count(forTent number: Int) -> Int {
         records.lazy.filter { $0.tentNr == number }.count
-    }
-
-    private func kids(forTent number: Int) -> [ShiftRecord] {
-        records.filter { $0.tentNr == number }.sortedByName()
     }
 }
 

@@ -8,7 +8,7 @@ import SwiftUI
 struct TentDetailView: View {
     let tentNumber: Int
     let shiftNr: Int
-    let records: [ShiftRecord]
+    let store: ShiftRecordsStore
     let scoring: TentScoringCoordinator
     @Binding var path: NavigationPath
 
@@ -16,9 +16,14 @@ struct TentDetailView: View {
     @State private var isLoadingScores: Bool = false
     @State private var scoresError: String?
     @State private var isAddGradeSheetPresented: Bool = false
+    @State private var isAddChildSheetPresented: Bool = false
 
     private var hasPrevious: Bool { tentNumber > 1 }
     private var hasNext: Bool { tentNumber < 10 }
+
+    private var records: [ShiftRecord] {
+        store.records.filter { $0.tentNr == tentNumber }.sortedByName()
+    }
 
     private var sortedScores: [TentScore] {
         scores.sorted { $0.createdAt > $1.createdAt }
@@ -32,6 +37,27 @@ struct TentDetailView: View {
                 } else {
                     ForEach(records) { record in
                         RecordRow(record: record, showsTeam: true)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    Task { await store.setTent(recordId: record.id, tentNr: nil) }
+                                } label: {
+                                    Label("Eemalda", systemImage: "trash")
+                                }
+                                Button {
+                                    Task {
+                                        await store.setPresence(
+                                            recordId: record.id,
+                                            isPresent: !record.isPresent
+                                        )
+                                    }
+                                } label: {
+                                    Label(
+                                        record.isPresent ? "Eemal" : "Kohal",
+                                        systemImage: record.isPresent ? "person.slash" : "checkmark"
+                                    )
+                                }
+                                .tint(.blue)
+                            }
                     }
                 }
             }
@@ -66,6 +92,12 @@ struct TentDetailView: View {
                 }
                 .accessibilityLabel("Tagasi")
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { isAddChildSheetPresented = true } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("Lisa laps")
+            }
         }
         .task {
             scoring.setActive(tentNumber: tentNumber, shiftNr: shiftNr)
@@ -82,31 +114,20 @@ struct TentDetailView: View {
                 goToTent(tentNumber + 1)
             }
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 40).onEnded(handleSwipe)
-        )
         .sheet(isPresented: $isAddGradeSheetPresented) {
             AddScoreSheet(tentNumber: tentNumber) { score in
                 try await TentsAPI.setScore(shiftNr: shiftNr, tentNr: tentNumber, score: score)
                 await loadScores()
             }
         }
+        .sheet(isPresented: $isAddChildSheetPresented) {
+            AddTentChildSheet(tentNumber: tentNumber, store: store)
+        }
         .accessibilityAction(named: Text("Eelmine telk")) {
             if hasPrevious { path.append(tentNumber - 1) }
         }
         .accessibilityAction(named: Text("Järgmine telk")) {
             if hasNext { path.append(tentNumber + 1) }
-        }
-    }
-
-    private func handleSwipe(_ value: DragGesture.Value) {
-        let dx = value.translation.width
-        let dy = value.translation.height
-        guard abs(dx) > abs(dy) * 1.5, abs(dx) > 80 else { return }
-        if dx > 0, hasPrevious {
-            goToTent(tentNumber - 1)
-        } else if dx < 0, hasNext {
-            goToTent(tentNumber + 1)
         }
     }
 
@@ -228,3 +249,67 @@ private struct AddScoreSheet: View {
         }
     }
 }
+private struct AddTentChildSheet: View {
+    let tentNumber: Int
+    let store: ShiftRecordsStore
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText: String = ""
+
+    private var candidates: [ShiftRecord] {
+        store.records.filter { $0.tentNr == nil }.sortedByName()
+    }
+
+    private var filteredCandidates: [ShiftRecord] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return candidates }
+        return candidates.filter {
+            $0.childName.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if candidates.isEmpty {
+                    ContentUnavailableView(
+                        "Telgita lapsi pole",
+                        systemImage: "person.slash"
+                    )
+                } else if filteredCandidates.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                } else {
+                    List(filteredCandidates) { record in
+                        Button {
+                            Task {
+                                await store.setTent(recordId: record.id, tentNr: tentNumber)
+                            }
+                        } label: {
+                            RecordRow(record: record, showsTeam: true)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .contentMargins(.top, 0, for: .scrollContent)
+                }
+            }
+            .navigationTitle("\(tentNumber). telk")
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Otsi last")
+            .searchPresentationToolbarBehavior(.avoidHidingContent)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    if #available(iOS 26.0, *) {
+                        Button(role: .confirm) { dismiss() }
+                    } else {
+                        Button { dismiss() } label: {
+                            Image(systemName: "checkmark")
+                        }
+                        .accessibilityLabel("Valmis")
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
