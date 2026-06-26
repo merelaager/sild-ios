@@ -11,6 +11,7 @@ struct TeamsTab: View {
     let shiftNr: Int
 
     @State private var addingTeam: Team?
+    @State private var isEditing: Bool = false
 
     private var allRecords: [ShiftRecord] { records.records }
 
@@ -26,6 +27,16 @@ struct TeamsTab: View {
         NavigationStack {
             content
                 .navigationTitle("Meeskonnad")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            isEditing.toggle()
+                        } label: {
+                            Image(systemName: isEditing ? "checkmark" : "pencil")
+                        }
+                        .accessibilityLabel(isEditing ? "Valmis" : "Muuda")
+                    }
+                }
         }
     }
 
@@ -78,12 +89,27 @@ struct TeamsTab: View {
                         } else {
                             ForEach(teamMembers) { record in
                                 RecordRow(record: record, showsTent: true)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            Task {
+                                                await records.setTeam(
+                                                    recordId: record.id,
+                                                    teamId: nil,
+                                                    teamName: nil
+                                                )
+                                            }
+                                        } label: {
+                                            Label("Eemalda", systemImage: "trash")
+                                        }
+                                    }
                             }
                         }
-                        Button {
-                            addingTeam = team
-                        } label: {
-                            Label("Lisa laps", systemImage: "plus")
+                        if isEditing {
+                            Button {
+                                addingTeam = team
+                            } label: {
+                                Label("Lisa laps", systemImage: "plus")
+                            }
                         }
                     }
                     .id("team-\(team.id)")
