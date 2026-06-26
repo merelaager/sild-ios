@@ -83,15 +83,7 @@ struct TentDetailView: View {
             }
         }
         .navigationTitle("\(tentNumber). telk")
-        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button { path = NavigationPath() } label: {
-                    Image(systemName: "chevron.backward")
-                        .fontWeight(.semibold)
-                }
-                .accessibilityLabel("Tagasi")
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button { isAddChildSheetPresented = true } label: {
                     Image(systemName: "plus")
@@ -99,7 +91,7 @@ struct TentDetailView: View {
                 .accessibilityLabel("Lisa laps")
             }
         }
-        .task {
+        .task(id: tentNumber) {
             scoring.setActive(tentNumber: tentNumber, shiftNr: shiftNr)
             await loadScores()
         }
@@ -124,10 +116,10 @@ struct TentDetailView: View {
             AddTentChildSheet(tentNumber: tentNumber, store: store)
         }
         .accessibilityAction(named: Text("Eelmine telk")) {
-            if hasPrevious { path.append(tentNumber - 1) }
+            if hasPrevious { goToTent(tentNumber - 1) }
         }
         .accessibilityAction(named: Text("Järgmine telk")) {
-            if hasNext { path.append(tentNumber + 1) }
+            if hasNext { goToTent(tentNumber + 1) }
         }
     }
 
@@ -135,7 +127,7 @@ struct TentDetailView: View {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            path.append(target)
+            path = NavigationPath([target])
         }
     }
 
