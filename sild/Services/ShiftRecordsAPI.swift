@@ -16,10 +16,28 @@ enum ShiftRecordsAPI {
 
     private struct TentBody: Encodable {
         let tentNr: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case tentNr
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(tentNr, forKey: .tentNr)
+        }
     }
 
     private struct TeamBody: Encodable {
         let teamId: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case teamId
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(teamId, forKey: .teamId)
+        }
     }
 
     static func fetch(shiftNr: Int) async throws -> [ShiftRecord] {
