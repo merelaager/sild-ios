@@ -46,7 +46,9 @@ struct HomeView: View {
                 }
             }
             .tabBarMinimizeOnScrollDownIfAvailable()
-            .tabViewBottomAccessoryIfAvailable(isEnabled: scoring.activeTent != nil) {
+            .tabViewBottomAccessoryIfAvailable(
+                isEnabled: !tentsPath.isEmpty && selectedTab == .telgid
+            ) {
                 TentAccessoryControls(scoring: scoring)
             }
             .task(id: shiftNr) {
