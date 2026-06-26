@@ -47,7 +47,7 @@ struct TentsTab: View {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(Array(tentRange), id: \.self) { number in
                         NavigationLink(value: number) {
-                            TentCard(title: "\(number). telk", count: count(forTent: number))
+                            TentCard(title: "\(number). telk", names: firstNames(forTent: number))
                         }
                         .buttonStyle(.plain)
                     }
@@ -58,28 +58,43 @@ struct TentsTab: View {
         }
     }
 
-    private func count(forTent number: Int) -> Int {
-        records.lazy.filter { $0.tentNr == number }.count
+    private func firstNames(forTent number: Int) -> [String] {
+        records.filter { $0.tentNr == number }
+            .sortedByName()
+            .compactMap { $0.childName.split(separator: " ").first.map(String.init) }
     }
 }
 
 private struct TentCard: View {
     let title: String
-    let count: Int
+    let names: [String]
 
     var body: some View {
         VStack(spacing: 6) {
             Text(title).font(.headline)
-            Text(countLabel)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(spacing: 2) {
+                Text(firstRow)
+                Text(secondRow)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, minHeight: 80)
         .padding(.vertical, 12)
+        .padding(.horizontal, 8)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private var countLabel: String {
-        count == 1 ? "1 laps" : "\(count) last"
+    private var firstRow: String {
+        names.isEmpty ? "Tühi" : names.prefix(2).joined(separator: ", ")
+    }
+
+    private var secondRow: String {
+        let middle = names.dropFirst(2).prefix(2).joined(separator: ", ")
+        if names.count > 4 {
+            return middle.isEmpty ? "…" : "\(middle), …"
+        }
+        return middle
     }
 }
