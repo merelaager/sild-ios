@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct AppView: View {
     @Environment(AuthService.self) private var auth
 
     @State private var records = ShiftRecordsStore()
@@ -61,7 +61,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    AppView()
         .environment(AuthService())
         .environment(AppRouter())
 }

@@ -12,7 +12,7 @@ struct sildApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppView()
                 .environment(auth)
                 .environment(router)
                 .onOpenURL { router.handle(url: $0) }
