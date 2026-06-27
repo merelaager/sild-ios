@@ -97,6 +97,18 @@ struct TeamsTab: View {
                 systemImage: "exclamationmark.triangle",
                 description: Text(teamsError)
             )
+        } else if teams.loadedShiftNr == shiftNr {
+            ContentUnavailableView {
+                Label("Meeskondi pole", systemImage: "figure.sailing")
+            } description: {
+                Text("Vahetuses pole veel meeskondi.")
+            } actions: {
+                Button("Loo meeskond") { showTeamCreationSheet = true }
+                    .buttonStyle(.borderedProminent)
+            }
+            .sheet(isPresented: $showTeamCreationSheet) {
+                CreateTeamSheet(teams: self.teams, shiftNr: shiftNr)
+            }
         } else {
             ProgressView()
         }
