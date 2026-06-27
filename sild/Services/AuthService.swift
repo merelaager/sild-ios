@@ -66,7 +66,7 @@ final class AuthService {
     }
 
     func logout() {
-        DiskCache.remove(key: Self.userCacheKey)
+        DiskCache.clearAll()
         state = .unauthenticated
     }
 
