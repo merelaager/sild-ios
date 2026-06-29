@@ -182,7 +182,7 @@ struct TeamsTab: View {
                 if !ghostRecords.isEmpty {
                     Section("Meeskonnata") {
                         ForEach(ghostRecords) { record in
-                            RecordRow(record: record)
+                            RecordRow(record: record, showsTent: true)
                                 .selectionDisabled()
                         }
                     }
