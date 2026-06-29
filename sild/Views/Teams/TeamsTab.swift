@@ -17,6 +17,13 @@ struct TeamsTab: View {
 
     private var isEditing: Bool { editMode.isEditing }
 
+    private var selectionBinding: Binding<Set<Int>> {
+        Binding(
+            get: { isEditing ? selectedRecordIds : [] },
+            set: { if isEditing { selectedRecordIds = $0 } }
+        )
+    }
+
     private var allRecords: [ShiftRecord] { records.records }
 
     private var ghostRecords: [ShiftRecord] {
@@ -116,7 +123,7 @@ struct TeamsTab: View {
 
     private func teamsList(teams: [Team]) -> some View {
         ScrollViewReader { proxy in
-            List(selection: $selectedRecordIds) {
+            List(selection: selectionBinding) {
                 Section("Meeskonnad") {
                     ForEach(teams) { team in
                         indexRow(title: team.name, targetId: "team-\(team.id)", proxy: proxy)
@@ -144,7 +151,7 @@ struct TeamsTab: View {
                         } else {
                             ForEach(teamMembers) { record in
                                 RecordRow(record: record, showsTent: true)
-                                    .selectionDisabled(!isEditing)
+                                    .listRowBackground(selectedRecordIds.contains(record.id) ? nil : Color(UIColor.systemBackground) as Color?)
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button(role: .destructive) {
                                             Task {
@@ -176,6 +183,7 @@ struct TeamsTab: View {
                     Section("Meeskonnata") {
                         ForEach(ghostRecords) { record in
                             RecordRow(record: record)
+                                .selectionDisabled()
                         }
                     }
                     .id("team-none")
@@ -317,6 +325,7 @@ private struct AddTeamMemberSheet: View {
                             }
                         } label: {
                             RecordRow(record: record, showsTent: true)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
