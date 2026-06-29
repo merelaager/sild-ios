@@ -278,6 +278,7 @@ private struct AddTentChildSheet: View {
                             }
                         } label: {
                             RecordRow(record: record, showsTeam: true)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
